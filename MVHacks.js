@@ -6,16 +6,16 @@ const waterProjectiles = [];
 const gravity = 0.4; // Gravity force
 const platforms = []; // Array to hold platforms
 const fires = []; //array to hold fires
-const fireCrackles = new Audio("fireCrackle.mp3");
+const fireCrackles = new Audio("./fireCrackle.mp3");
 const death = new Audio();
 death.volume = 1.0;
 death.src = "./playerDeath.mp3";
-const pouringWater = new Audio("pouringWater.mp3");
+const pouringWater = new Audio("./pouringWater.mp3");
 const infoText = document.getElementById("infoText");
-const deleteFromArray = function(target, array){
+const deleteFromArray = function (target, array) {
     returnArray = [];
-    for (i of array){
-        if (i !== target){
+    for (i of array) {
+        if (i !== target) {
             returnArray.push(i);
         }
     }
@@ -73,16 +73,21 @@ const Player = {
         }
     }
 };
-function Water(Player) {
-    this.x = Player.x;
-    this.y = Player.y;
+
+// player1 = new Player();
+// water1 = new Water(Player);
+// water1.x= 20;
+// console.log(water1.x);
+function Water(x, y, direction) {
+    this.x = x;
+    this.y = y;
     this.speed = 10;
-    this.size = 40;
-    this.direction = Player.direction;
+    this.size = 25;
+    this.direction = direction;
     this.draw = function () {
         const image = new Image();
         image.src = 'waterBall.webp';
-        ctx.drawImage(image, x, y, this.size, this.size);
+        ctx.drawImage(image, this.x, this.y, this.size, this.size);
     }
     this.collide = function (object) {
         if (
@@ -91,14 +96,14 @@ function Water(Player) {
             this.y + this.size > object.y &&
             this.y + this.size <= object.y + object.size
         ) {
-            
+
             return true;
         }
     },
-    this.die = function (waterProjectiles) {
-        this.y = -60;
-        this.speed = 0;
-    }
+        this.die = function (waterProjectiles) {
+            this.y = -60;
+            this.speed = 0;
+        }
     this.tick = function () {
         if (this.direction === "left") {
             this.x = this.x - this.speed;
@@ -106,10 +111,10 @@ function Water(Player) {
         if (this.direction === "right") {
             this.x = this.x + this.speed;
         }
-        if (this.direction === "up"){
+        if (this.direction === "up") {
             this.y = this.y - this.speed;
         }
-        if (this.direction==="down"){
+        if (this.direction === "down") {
             this.y = this.y + this.speed;
         }
         if (this.y < 0 || this.y > canvas.getAttribute("height") || this.x < 0 || this.x > canvas.getAttribute("width")) {
@@ -120,7 +125,7 @@ function Water(Player) {
 function Fire(x, y) {
     this.x = x;
     this.y = y;
-    this.size = 50;
+    this.size = 30;
     this.draw = function () {
         const image = new Image();
         image.src = 'fire.webp';
@@ -209,17 +214,20 @@ function gameLoop() {
             Player.die();
         }
     }
-    for (const water of waterProjectiles){
+    for (const water of waterProjectiles) {
         water.draw();
         water.tick();
-        for (const fire of fires){
-            if (water.collide()){
-                water.die()
+        for (const fire of fires) {
+            if (water.collide(fire)) {
+                water.die();
                 deleteFromArray(water, waterProjectiles);
+                Player.score = Player.score + 1;
+                fire.die();
+                deleteFromArray(fire,fires);
             }
         }
-        for (const platform of platforms){
-            if (water.collide()){
+        for (const platform of platforms) {
+            if (water.collide(platform)) {
                 water.die()
                 deleteFromArray(water, waterProjectiles);
             }
@@ -263,9 +271,11 @@ document.addEventListener('keypress', (event) => {
     if (keys['ArrowRight']) {
         Player.direction = "right";
     }
-    if (Keys[" "]) {
-        Water = new Water(Player);
-        waterProjectiles.push(Water);
+    if (keys[" "]) {
+        const water = new Water(Player.x, Player.y, Player.direction);
+        console.log(Player.x);
+        waterProjectiles.push(water);
+        console.log(water.x);
         pouringWater.play();
     }
     if (Player.x >= canvas.getAttribute("width") - 15) {
