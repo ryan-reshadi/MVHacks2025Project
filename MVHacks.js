@@ -6,11 +6,9 @@ const waterProjectiles = [];
 const gravity = 0.4; // Gravity force
 const platforms = []; // Array to hold platforms
 const fires = []; //array to hold fires
-const fireCrackles = new Audio("./fireCrackle.mp3");
-const death = new Audio();
-death.volume = 1.0;
-death.src = "./playerDeath.mp3";
-const pouringWater = new Audio("./pouringWater.mp3");
+//const fireCrackles = new Audio("./fireCrackle.mp3");
+
+//const pouringWater = new Audio("./pouringWater.mp3");
 const infoText = document.getElementById("infoText");
 const deleteFromArray = function (target, array) {
     returnArray = [];
@@ -36,7 +34,7 @@ const Player = {
         Player.x = 40;
         Player.y = 20;
         Player.velocityY = 0;
-        death.play();
+        
     },
     move: function (dx) {
         this.x += dx;
@@ -78,6 +76,16 @@ const Player = {
 // water1 = new Water(Player);
 // water1.x= 20;
 // console.log(water1.x);
+function play(){
+    let audio = new Audio('playerDeath.mp3');
+    audio.play().catch(error => console.error("Playback error:", error));
+};
+function jumpSound(){
+    let audio = new Audio('playerJump.mp3');
+    audio.play().catch(error => console.error("Playback error:", error));
+}
+
+
 function Water(x, y, direction) {
     this.x = x;
     this.y = y;
@@ -100,7 +108,7 @@ function Water(x, y, direction) {
             return true;
         }
     },
-        this.die = function (waterProjectiles) {
+        this.die = function () {
             this.y = -60;
             this.speed = 0;
         }
@@ -126,13 +134,16 @@ function Fire(x, y) {
     this.x = x;
     this.y = y;
     this.size = 30;
+    this.dead = false;
     this.draw = function () {
         const image = new Image();
         image.src = 'fire.webp';
         ctx.drawImage(image, x, y, this.size, this.size);
     },
         this.die = function () {
-            this.y = this.y + 1800;
+            this.y = 1800;
+            this.dead = true;
+            play();
         }
     this.playerCollide = function (player) {
         if (
@@ -170,13 +181,29 @@ function Platform(x, y, width, length, color) {
 }
 objects.push(Player);
 
+const height = 20
+const brown = '#964B00'
 // Create platforms
-platforms.push(new Platform(50, 300, 1300, 10, 'grey'));
-platforms.push(new Platform(200, 400, 150, 10, 'grey'));
+platforms.push(new Platform(50, 200, 200, height, brown));
+platforms.push(new Platform(250, 400, 75, height, brown));
+platforms.push(new Platform(450, 400, 75, height, brown));
+platforms.push(new Platform(650, 320, 20, height*5, brown)); // tall wall
+platforms.push(new Platform(620, 450, 20, height, brown)); // small platform
+platforms.push(new Platform(450, 535, 80, height, brown));
+platforms.push(new Platform(300, 670, 100, height, brown));
+platforms.push(new Platform(490, 630, 20, height*2.5, brown));
 
 // Create fires
 fires.push(new Fire(100, 150));
 fires.push(new Fire(200, 250));
+fires.push(new Fire(700, 200));
+fires.push(new Fire(750, 200));
+fires.push(new Fire(1000, 200));
+fires.push(new Fire(1100, 100));
+fires.push(new Fire(1300, 200));
+
+
+
 
 for (const fire of fires) {
     objects.push(fire);
@@ -194,26 +221,45 @@ function gameLoop() {
     // Draw background
     ctx.drawImage(BGImage, 0, 0, 1400, 850);
 
+    // Handle player movement
+    if (keys['a']) {
+        Player.move(-Player.speed);
+    }
+    if (keys['d']) {
+        Player.move(Player.speed);
+    }
+    if (keys['w']) {
+        Player.jump();
+        jumpSound();
+    }
+
     // Update and draw player
     Player.update();
     Player.draw();
 
-    infoText.innerText = "Score: " + Player.score;
+    infoText.innerText = "Score: " + Player.score + ", A - Move left, D - Move right, W - Jump, Space - Shoot water, Arrow keys - Change direction of shooting water ";
 
     if (Player.y >= canvas.getAttribute("height")) {
-        Player.die()
+        Player.die();
     }
+
     // Draw platforms
     for (const platform of platforms) {
         platform.draw();
     }
+
+    // Draw fires and check collisions
     for (const fire of fires) {
-        fire.draw();
+        if (!fire.dead){
+            fire.draw();
+        }
         if (fire.playerCollide(Player) && Player.damageable) {
-            // Fire kills player
             Player.die();
+            play
         }
     }
+
+    // Handle water projectiles
     for (const water of waterProjectiles) {
         water.draw();
         water.tick();
@@ -221,14 +267,14 @@ function gameLoop() {
             if (water.collide(fire)) {
                 water.die();
                 deleteFromArray(water, waterProjectiles);
-                Player.score = Player.score + 1;
+                Player.score += 1;
                 fire.die();
-                deleteFromArray(fire,fires);
+                deleteFromArray(fire, fires);
             }
         }
         for (const platform of platforms) {
             if (water.collide(platform)) {
-                water.die()
+                water.die();
                 deleteFromArray(water, waterProjectiles);
             }
         }
@@ -238,57 +284,33 @@ function gameLoop() {
 }
 
 // Handle keyboard input
-document.addEventListener('keypress', (event) => {
+document.addEventListener('keydown', (event) => {
+    keys[event.key] = true;
 
-    document.addEventListener('keydown', (event) => {
-        keys[event.key] = true;
-    });
+    // Handle water shooting
+    if (event.key === ' ') {
+        const water = new Water(Player.x, Player.y, Player.direction);
+        waterProjectiles.push(water);
+    }
 
-    document.addEventListener('keyup', (event) => {
-        keys[event.key] = false;
-
-    });
-    // if(keys['d'] && keys ['w']){
-    //     Player.jump();
-    //     Player.move(Player.speed);
-    // }
-    // if(keys['a'] && keys ['w']){
-    //     Player.jump();
-    //     Player.move(-Player.speed);
-    // }
-    if (keys['a']) {
-        Player.move(-Player.speed);
-    }
-    if (keys['d']) {
-        Player.move(Player.speed);
-    }
-    if (keys['w']) {
-        Player.jump();
-    }
-    if (keys['ArrowLeft']) {
-        Player.direction = "left";
-    }
-    if (keys['ArrowRight']) {
+    if (event.key === 'ArrowRight') {
         Player.direction = "right";
     }
-    if (keys[" "]) {
-        const water = new Water(Player.x, Player.y, Player.direction);
-        console.log(Player.x);
-        waterProjectiles.push(water);
-        console.log(water.x);
-        pouringWater.play();
+    if (event.key === 'ArrowLeft') {
+        Player.direction = "left";
     }
-    if (Player.x >= canvas.getAttribute("width") - 15) {
-        for (object in objects) {
-            object.x = object.x - 10;
-        }
+    if (event.key === 'ArrowUp') {
+        Player.direction = "up";
     }
-    if (Player.x <= 0) {
-        for (object in objects) {
-            object.x = object.x + 10;
-        }
+    if (event.key === "ArrowDown") {
+        Player.direction = "down";
     }
 });
+
+document.addEventListener('keyup', (event) => {
+    keys[event.key] = false;
+});
+
 // Start the game loop
 BGImage.onload = function () {
     gameLoop();
