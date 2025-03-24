@@ -217,8 +217,6 @@ fires.push(new Fire(800, 450));
 fires.push(new Fire(1000, 475));
 fires.push(new Fire(500, 550));
 fires.push(new Fire(600, 600));
-fires.push(new Fire(300, 700));
-fires.push(new Fire(800, 700));
 
 
 const targetScore = fires.length;
