@@ -30,10 +30,12 @@ const Player = {
     onGround: false,
     direction: "up",
     damageable: true,
+    deaths: 0,
     die: function () {
         Player.x = 40;
         Player.y = 20;
         Player.velocityY = 0;
+        Player.deaths = Player.deaths + 1;
         
     },
     move: function (dx) {
@@ -89,8 +91,8 @@ function jumpSound(){
 function Water(x, y, direction) {
     this.x = x;
     this.y = y;
-    this.speed = 10;
-    this.size = 25;
+    this.speed = 15;
+    this.size = 15;
     this.direction = direction;
     this.draw = function () {
         const image = new Image();
@@ -125,9 +127,7 @@ function Water(x, y, direction) {
         if (this.direction === "down") {
             this.y = this.y + this.speed;
         }
-        if (this.y < 0 || this.y > canvas.getAttribute("height") || this.x < 0 || this.x > canvas.getAttribute("width")) {
-            this.die();
-        }
+        
     }
 }
 function Fire(x, y) {
@@ -141,7 +141,8 @@ function Fire(x, y) {
         ctx.drawImage(image, x, y, this.size, this.size);
     },
         this.die = function () {
-            this.y = 1800;
+            this.x = canvas.width+20;
+            this.y = -20;
             this.dead = true;
             play();
         }
@@ -189,21 +190,38 @@ platforms.push(new Platform(250, 400, 75, height, brown));
 platforms.push(new Platform(450, 400, 75, height, brown));
 platforms.push(new Platform(650, 320, 20, height*5, brown)); // tall wall
 platforms.push(new Platform(620, 450, 20, height, brown)); // small platform
-platforms.push(new Platform(450, 535, 80, height, brown));
+platforms.push(new Platform(480, 500, 80, height, brown));
+// Jump over wall
 platforms.push(new Platform(300, 670, 100, height, brown));
 platforms.push(new Platform(490, 630, 20, height*2.5, brown));
+platforms.push(new Platform(600, 670, 70, height, brown));
+
+platforms.push(new Platform(800, 670, 70, height, brown));
+// Elevator
+platforms.push(new Platform(1070, 670, 150, height, brown));
+
+for (let i = 90; i <= 90*4; i = i + 90){
+    platforms.push(new Platform(1100, 670-i, 110, height, brown));
+}
 
 // Create fires
 fires.push(new Fire(100, 150));
-fires.push(new Fire(200, 250));
+fires.push(new Fire(200, 300));
 fires.push(new Fire(700, 200));
 fires.push(new Fire(750, 200));
 fires.push(new Fire(1000, 200));
 fires.push(new Fire(1100, 100));
 fires.push(new Fire(1300, 200));
+fires.push(new Fire(300, 450));
+fires.push(new Fire(800, 450));
+fires.push(new Fire(1000, 475));
+fires.push(new Fire(500, 550));
+fires.push(new Fire(600, 600));
+fires.push(new Fire(300, 700));
+fires.push(new Fire(800, 700));
 
 
-
+const targetScore = fires.length;
 
 for (const fire of fires) {
     objects.push(fire);
@@ -237,7 +255,7 @@ function gameLoop() {
     Player.update();
     Player.draw();
 
-    infoText.innerText = "Score: " + Player.score + ", A - Move left, D - Move right, W - Jump, Space - Shoot water, Arrow keys - Change direction of shooting water ";
+    infoText.innerText = "Score: " + Player.score + "/" + targetScore + " Deaths: " + Player.deaths +  ", A - Move left, D - Move right, W - Jump, Space - Shoot water, Arrow keys - Change direction of shooting water ";
 
     if (Player.y >= canvas.getAttribute("height")) {
         Player.die();
@@ -261,6 +279,11 @@ function gameLoop() {
 
     // Handle water projectiles
     for (const water of waterProjectiles) {
+        if (this.y < 0 || this.y > canvas.getAttribute("height") || this.x < 0 || this.x > canvas.getAttribute("width")) {
+            this.die();
+            deleteFromArray(water,waterProjectiles);
+        }
+        else {
         water.draw();
         water.tick();
         for (const fire of fires) {
@@ -279,7 +302,22 @@ function gameLoop() {
             }
         }
     }
-
+    }
+    if (Player.score >= targetScore) {
+        ctx.fillStyle = '#88E788';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'black';
+        ctx.font = "50px Arial";
+        ctx.fillText("You win!", canvas.width / 2-200, canvas.height / 2);
+        ctx.fillText("Press F5 to play again", canvas.width / 2-200, canvas.height / 2 + 50);
+        ctx.fillText("Points: " + Player.score + "/" + targetScore + " Deaths: " + Player.deaths, canvas.width / 2-200, canvas.height / 2 + 100);
+        ctx.font = "20px Arial";
+        ctx.fillText("These dangerous forest fires that you just put out occur all over the world, claiming lives and homes every time they happen.", canvas.width / 2 - 600, canvas.height / 2 + 150);
+        ctx.fillText("We need to push for more preventative measures for these catastrophies in order to eliminate or mitigate the damages from wildfires.", canvas.width / 2 - 600, canvas.height / 2 + 180);
+        ctx.fillText("Because gradual global warming and climate change is the primary cause of the increase in natural wildfires as of late, that should be our main priority.", canvas.width / 2 - 650, canvas.height / 2 + 210);
+        ctx.fillText("Combatting global warming will not be easy, but we must work together to prevent this impending doom that is knocking on our door.", canvas.width / 2 - 600, canvas.height / 2 + 240);
+        
+    }
     requestAnimationFrame(gameLoop);
 }
 
